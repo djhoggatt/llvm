@@ -945,6 +945,21 @@ bool InstCombiner::WillNotOverflowSignedSub(Value *LHS, Value *RHS,
       (LHSKnownZero[BitWidth - 1] && RHSKnownZero[BitWidth - 1]))
     return true;
 
+
+  //DENVER'S CODE
+  //Signed overflow cannot happen if the LHS >= (INT_MIN | 1)
+  //And the RHS = 1
+  //
+  //Note: I think implementing the following TODO would have fixed this.
+  //But my time is limited, so I'm just going to implement this one case.
+  //-------------------------------------------------------------------------
+  //If the bottom most bit in the LHS is 1, then you can always decrement
+  //by one without overflow. The worst case scecnario would be INT_MIN + 1,
+  //which can decrement by one without overflow.
+  if(LHSKnownOne[0] && match(RHS, m_One()))
+    return true;
+  //-------------------------------------------------------------------------
+  
   // TODO: implement logic similar to checkRippleForAdd
   return false;
 }

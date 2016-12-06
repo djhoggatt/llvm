@@ -1,6 +1,7 @@
 ; RUN: opt -S -instcombine < %s | FileCheck %s
 ; <rdar://problem/8558713>
 
+declare { i32, i1 } @llvm.ssub.with.overflow.i32(i32, i32) nounwind readnone
 declare void @throwAnExceptionOrWhatever()
 
 ; CHECK-LABEL: @test1(
@@ -119,4 +120,23 @@ if.then:
 if.end:
   %conv9 = trunc i64 %add to i32
   ret i32 %conv9
+}
+
+; CHECK-LABEL: @test9(
+;DENVER'S TEST
+define i32 @test9(i32 %a) nounwind ssp {
+entry:
+; CHECK-NOT: llvm.ssub.with.overflow.i32
+  %0 = or i32 %a, 1
+  %1 = tail call { i32, i1 } @llvm.ssub.with.overflow.i32(i32 %0, i32 1)
+  %2 = extractvalue { i32, i1 } %1, 1
+  br i1 %2, label %if.then, label %if.end
+
+if.then:
+  tail call void @throwAnExceptionOrWhatever() nounwind
+  br label %if.end
+
+if.end:
+  %3 = extractvalue { i32, i1 } %1, 0
+  ret i32 %3
 }
